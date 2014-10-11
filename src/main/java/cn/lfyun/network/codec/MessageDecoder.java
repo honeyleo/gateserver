@@ -167,7 +167,7 @@ public class MessageDecoder extends LengthFieldBasedFrameDecoder {
         buffer.readBytes(bytes);
         Request request = Request.createRequest(size, msgId, bytes);
         ctx.fireChannelRead(request);
-		return buffer;
+		return null;
 	}
 	
 	private static int calculateVerificationBytes(int offset){

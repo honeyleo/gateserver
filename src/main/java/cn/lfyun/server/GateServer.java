@@ -30,15 +30,32 @@
 //                  	不见满街漂亮妹，哪个归得程序员？                                                                            //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
-package cn.lfyun.network.client;
+package cn.lfyun.server;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.DefaultThreadFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import cn.lfyun.network.codec.MessageDecoder;
+import cn.lfyun.network.codec.MessageEncoder;
+import cn.lfyun.network.handler.MessageHandler;
 
 /**
  * @copyright SHENZHEN RONG WANG HUI ZHI TECHNOLOGY CORP
  * @author Lyon.liao
- * 创建时间：2014年10月10日
+ * 创建时间：2014年10月9日
  * 类说明：
  * 
- * 最后修改时间：2014年10月10日
+ * 最后修改时间：2014年10月9日
  * 修改内容： 新建此类
  *************************************************************
  *                                    .. .vr       
@@ -70,15 +87,67 @@ package cn.lfyun.network.client;
  *
  ***************************************************************
  */
-public class ServerClientMgr {
+public class GateServer {
 
-	private static ServerClient gameServerClient;
+	static ServerBootstrap serverBootstrap;
+
+	private static Logger logger = LoggerFactory.getLogger(GateServer.class);
 	
-	static {
-		gameServerClient = new ServerClient(101, "QQ游戏服务器-9101", "127.0.0.1", 9101, 2, new GameServerChannelInitializer());
+	public static void start(int port) {
+		// Configure the server.
+		EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+		EventLoopGroup workerGroup = new NioEventLoopGroup(2, new DefaultThreadFactory("GateServer"));
+		
+		try {
+			serverBootstrap = new ServerBootstrap();
+			
+			serverBootstrap.group(bossGroup, workerGroup)
+				.channel(NioServerSocketChannel.class)
+				.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+				.option(ChannelOption.SO_BACKLOG, 1024)
+				.option(ChannelOption.TCP_NODELAY, true)
+				.option(ChannelOption.SO_KEEPALIVE, true)
+				.option(ChannelOption.SO_RCVBUF, 2048)
+				.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+				.childHandler(new ChannelInitializer<SocketChannel>() {
+					@Override
+					protected void initChannel(SocketChannel ch) throws Exception {
+						ch.pipeline()
+							.addLast("decoder", new MessageDecoder())
+							.addLast(new MessageHandler())
+							.addLast("encoder", new MessageEncoder())
+							;
+					}
+				});
+			serverBootstrap.bind(port).channel();
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+		}
+
+		logger.info("服务器启动成功，开始监听{} 端口...", port);
 	}
 	
-	public static ServerClient getGameServerClient() {
-		return gameServerClient;
+	public static void shutdown() {
+		
+	}
+	private static class ShutdownHook implements Runnable {
+
+		@Override
+		public void run() {
+			try {
+				// do shutdown procedure here.
+				logger.info("正在优雅的停止服务器.....");
+				GateServer.shutdown();
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
+			} finally {
+				// any I/O procedure for destory?
+			}
+		}
+	}
+	
+	public static void main(String[] args) {
+		start(9000);
+		Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook(),"shutdownHook"));
 	}
 }

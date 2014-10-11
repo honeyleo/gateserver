@@ -41,6 +41,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.DefaultThreadFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,8 +97,9 @@ public class ServerClient {
 	private Bootstrap bootstrap;
 	private Channel channel;
 	
-	public ServerClient(int id, String ip, int port, int workerThread, ChannelInitializer<SocketChannel> channelInitializer) {
+	public ServerClient(int id, String name, String ip, int port, int workerThread, ChannelInitializer<SocketChannel> channelInitializer) {
 		this.id = id;
+		this.name = name;
 		this.ip = ip;
 		this.port = port;
 		init(workerThread, channelInitializer);
@@ -105,7 +107,7 @@ public class ServerClient {
 	}
 	
 	public void init(int workerThread, ChannelInitializer<SocketChannel> channelInitializer) {
-		EventLoopGroup workerGroup = new NioEventLoopGroup(workerThread);
+		EventLoopGroup workerGroup = new NioEventLoopGroup(workerThread, new DefaultThreadFactory("GameServer"));
 		
 		try {
 			bootstrap = new Bootstrap();
@@ -132,7 +134,24 @@ public class ServerClient {
 		}
 	}
 	
-	public void send(PBMessage pbMessage) {
-		channel.write(pbMessage);
+	public boolean isAvailable() {
+		if(channel == null || !channel.isActive()) {
+			return false;
+		}
+		return true;
+	}
+	
+	public void send(final PBMessage pbMessage) {
+		if(!isAvailable()) {
+			connect();
+		}
+		channel.eventLoop().execute(new Runnable() {
+			
+			@Override
+			public void run() {
+				logger.info("CMD={}", pbMessage.getCmd());
+				channel.write(pbMessage);
+			}
+		});
 	}
 }

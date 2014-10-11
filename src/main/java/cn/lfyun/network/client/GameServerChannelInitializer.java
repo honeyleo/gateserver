@@ -91,6 +91,7 @@ public class GameServerChannelInitializer extends ChannelInitializer<SocketChann
 				.addLast(new GameServerHandler())
 				.addLast("frameEncoder", new LengthFieldPrepender(2))
 				.addLast("protobufEncoder", new ProtobufEncoder())
+				.addLast(new ServerClientOutboundHandler())
 		;
 	}
 

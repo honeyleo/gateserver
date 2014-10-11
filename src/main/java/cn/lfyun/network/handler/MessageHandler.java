@@ -33,6 +33,7 @@
 package cn.lfyun.network.handler;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -40,6 +41,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import cn.lfyun.game.Player;
 import cn.lfyun.game.WorldManager;
 import cn.lfyun.network.client.ServerClientMgr;
+import cn.lfyun.network.message.LoginByPidReq_Protocol.LoginByPidReq;
 import cn.lfyun.network.message.PBMessageProto.PBMessage;
 import cn.lfyun.network.message.Request;
 import cn.lfyun.network.message.Response;
@@ -98,14 +100,14 @@ public class MessageHandler extends SimpleChannelInboundHandler<Request>{
 			throws Exception {
 		final int cmd = msg.getCmd();
 		switch (cmd) {
-		case 0x11:
+		case 0x0113:
 			processLogin(ctx, msg);
 			break;
 
 		default:
 			if(player == null) {
 				Response response = Response.fail(ErrorCode.NOT_LOGIN);
-				ctx.write(response).addListener(ChannelFutureListener.CLOSE);
+				ctx.channel().write(response).addListener(ChannelFutureListener.CLOSE);
 			} else {
 				processMessage(ctx, msg);
 			}
@@ -114,15 +116,20 @@ public class MessageHandler extends SimpleChannelInboundHandler<Request>{
 	}
 	
 	private void processLogin(ChannelHandlerContext ctx, Request msg) {
-		player = new Player();
-		player.id = 1000;
-		player.channel = ctx.channel();
-		WorldManager.add(player);
+		try {
+			LoginByPidReq loginByPidReq = LoginByPidReq.parseFrom(msg.getBytes());
+			player = new Player();
+			player.id = loginByPidReq.getPid();
+			player.channel = ctx.channel();
+			WorldManager.add(player);
+		} catch (InvalidProtocolBufferException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void processMessage(ChannelHandlerContext ctx, Request msg) {
 		switch(msg.getCmd()) {
-		case 0x10:
+		case 0x0016:
 			ctx.write(Response.PONG);
 			break;
 		default:
