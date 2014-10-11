@@ -145,13 +145,7 @@ public class ServerClient {
 		if(!isAvailable()) {
 			connect();
 		}
-		channel.eventLoop().execute(new Runnable() {
-			
-			@Override
-			public void run() {
-				logger.info("CMD={}", pbMessage.getCmd());
-				channel.write(pbMessage);
-			}
-		});
+		logger.info("CMD={}", pbMessage.getCmd());
+		channel.writeAndFlush(pbMessage);
 	}
 }
