@@ -104,7 +104,6 @@ public class MessageEncoder extends MessageToByteEncoder<Response> {
 		if(datas != null) {
 			out.writeBytes(datas);
 		}
-		ctx.writeAndFlush(out);
 	}
 
 }

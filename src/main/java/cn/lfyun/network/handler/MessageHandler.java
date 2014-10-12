@@ -134,7 +134,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<Request>{
 			break;
 		default:
 			PBMessage.Builder builder = PBMessage.newBuilder();
-			builder.setCmd(msg.getCmd()).setId("" + player.id).setData(ByteString.copyFrom(msg.getBytes()));
+			builder.setCmd(msg.getCmd()).setSessionId(player.id).setData(ByteString.copyFrom(msg.getBytes()));
 			ServerClientMgr.getGameServerClient().send(builder.build());
 			break;
 		}

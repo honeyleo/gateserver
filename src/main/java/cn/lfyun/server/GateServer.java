@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import cn.lfyun.network.codec.MessageDecoder;
 import cn.lfyun.network.codec.MessageEncoder;
 import cn.lfyun.network.handler.MessageHandler;
+import cn.lfyun.network.handler.SimpleChannelOutboundHandler;
 
 /**
  * @copyright SHENZHEN RONG WANG HUI ZHI TECHNOLOGY CORP
@@ -116,6 +117,7 @@ public class GateServer {
 							.addLast("decoder", new MessageDecoder())
 							.addLast(new MessageHandler())
 							.addLast("encoder", new MessageEncoder())
+							.addLast(new SimpleChannelOutboundHandler())
 							;
 					}
 				});

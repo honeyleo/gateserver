@@ -95,7 +95,7 @@ public class WorldManager {
 	public static void writeToClient(int id, Response response) {
 		Player player = getPlayer(id);
 		if(player != null && player.channel != null) {
-			player.channel.write(response);
+			player.channel.writeAndFlush(response);
 		}
 	}
 }
