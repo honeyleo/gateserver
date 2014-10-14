@@ -1,4 +1,4 @@
-package cn.lfyun.utilities;
+package cn.huizhi.utilities;
 
 import java.io.IOException;
 import java.io.OutputStream;

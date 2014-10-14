@@ -30,21 +30,31 @@
 //                  	不见满街漂亮妹，哪个归得程序员？                                                                            //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
-package cn.lfyun.network.client;
+package cn.huizhi.network.client;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import cn.lfyun.game.WorldManager;
-import cn.lfyun.network.message.PBMessageProto.PBMessage;
-import cn.lfyun.network.message.Response;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.DefaultThreadFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import cn.huizhi.message.PBMessagePro.PBMessage;
 
 /**
  * @copyright SHENZHEN RONG WANG HUI ZHI TECHNOLOGY CORP
  * @author Lyon.liao
- * 创建时间：2014年10月11日
+ * 创建时间：2014年10月10日
  * 类说明：
  * 
- * 最后修改时间：2014年10月11日
+ * 最后修改时间：2014年10月10日
  * 修改内容： 新建此类
  *************************************************************
  *                                    .. .vr       
@@ -76,15 +86,66 @@ import cn.lfyun.network.message.Response;
  *
  ***************************************************************
  */
-public class GameServerHandler extends SimpleChannelInboundHandler<PBMessage> {
+public class ServerClient {
 
-	/* (non-Javadoc)
-	 * @see io.netty.channel.SimpleChannelInboundHandler#channelRead0(io.netty.channel.ChannelHandlerContext, java.lang.Object)
-	 */
-	@Override
-	protected void channelRead0(ChannelHandlerContext ctx, PBMessage msg)
-			throws Exception {
-		WorldManager.writeToClient(msg.getSessionId(), Response.success(msg.getCmd(), msg.getData().toByteArray()));
+	private static Logger logger = LoggerFactory.getLogger(ServerClient.class);
+	
+	private int id;
+	private String name;
+	private String ip;
+	private int port;
+	private Bootstrap bootstrap;
+	private Channel channel;
+	
+	public ServerClient(int id, String name, String ip, int port, int workerThread, ChannelInitializer<SocketChannel> channelInitializer) {
+		this.id = id;
+		this.name = name;
+		this.ip = ip;
+		this.port = port;
+		init(workerThread, channelInitializer);
+		connect();
 	}
-
+	
+	public void init(int workerThread, ChannelInitializer<SocketChannel> channelInitializer) {
+		EventLoopGroup workerGroup = new NioEventLoopGroup(workerThread, new DefaultThreadFactory("GameServer"));
+		
+		try {
+			bootstrap = new Bootstrap();
+			
+			bootstrap.group(workerGroup)
+				.channel(NioSocketChannel.class)
+				.option(ChannelOption.TCP_NODELAY, true)
+				.option(ChannelOption.SO_KEEPALIVE, true)
+				.option(ChannelOption.MAX_MESSAGES_PER_READ, 4096)
+				.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+				.handler(channelInitializer);
+			logger.info("初始服务器【id={}, name={}, ip={}, port={}】", new Object[]{id, name, ip, port});
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+	}
+	
+	public void connect() {
+		try {
+			channel = bootstrap.connect(ip, port).sync().channel();
+			logger.info("连接上服务器【id={}, name={}, ip={}, port={}】", new Object[]{id, name, ip, port});
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+	}
+	
+	public boolean isAvailable() {
+		if(channel == null || !channel.isActive()) {
+			return false;
+		}
+		return true;
+	}
+	
+	public void send(final PBMessage pbMessage) {
+		if(!isAvailable()) {
+			connect();
+		}
+		logger.info("CMD={}", pbMessage.getCmd());
+		channel.writeAndFlush(pbMessage);
+	}
 }

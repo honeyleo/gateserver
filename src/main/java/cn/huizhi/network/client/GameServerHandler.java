@@ -30,17 +30,21 @@
 //                  	不见满街漂亮妹，哪个归得程序员？                                                                            //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
-package cn.lfyun.network.message;
+package cn.huizhi.network.client;
 
-import java.util.Arrays;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import cn.huizhi.game.WorldManager;
+import cn.huizhi.message.PBMessagePro.PBMessage;
+import cn.huizhi.network.message.Response;
 
 /**
  * @copyright SHENZHEN RONG WANG HUI ZHI TECHNOLOGY CORP
  * @author Lyon.liao
- * 创建时间：2014年10月8日
+ * 创建时间：2014年10月11日
  * 类说明：
  * 
- * 最后修改时间：2014年10月8日
+ * 最后修改时间：2014年10月11日
  * 修改内容： 新建此类
  *************************************************************
  *                                    .. .vr       
@@ -72,36 +76,15 @@ import java.util.Arrays;
  *
  ***************************************************************
  */
-public class Request {
+public class GameServerHandler extends SimpleChannelInboundHandler<PBMessage> {
 
-	private int length;
-	
-	private int cmd;
-	
-	private byte[] bytes;
-	
-	private Request(int length, int cmd, byte[] bytes) {
-		this.length = length;
-		this.cmd = cmd;
-		this.bytes = bytes;
-	}
-	public static Request createRequest(int length, int cmd, byte[] bytes) {
-		Request request = new Request(length, cmd, bytes);
-		return request;
-	}
-	public int getLength() {
-		return length;
-	}
-	public int getCmd() {
-		return cmd;
-	}
-	public byte[] getBytes() {
-		return bytes;
-	}
+	/* (non-Javadoc)
+	 * @see io.netty.channel.SimpleChannelInboundHandler#channelRead0(io.netty.channel.ChannelHandlerContext, java.lang.Object)
+	 */
 	@Override
-	public String toString() {
-		return "Request [length=" + length + ", cmd=" + cmd + ", bytes="
-				+ Arrays.toString(bytes) + "]";
+	protected void channelRead0(ChannelHandlerContext ctx, PBMessage msg)
+			throws Exception {
+		WorldManager.writeToClient(msg.getSessionId(), Response.success(msg.getCmd(), msg.getData().toByteArray()));
 	}
-	
+
 }

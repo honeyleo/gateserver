@@ -30,17 +30,15 @@
 //                  	不见满街漂亮妹，哪个归得程序员？                                                                            //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
-package cn.lfyun.network.message;
-
-import io.netty.channel.Channel;
+package cn.huizhi.network.client;
 
 /**
  * @copyright SHENZHEN RONG WANG HUI ZHI TECHNOLOGY CORP
  * @author Lyon.liao
- * 创建时间：2014年10月9日
+ * 创建时间：2014年10月10日
  * 类说明：
  * 
- * 最后修改时间：2014年10月9日
+ * 最后修改时间：2014年10月10日
  * 修改内容： 新建此类
  *************************************************************
  *                                    .. .vr       
@@ -72,27 +70,15 @@ import io.netty.channel.Channel;
  *
  ***************************************************************
  */
-public class IoMessageReceipt {
+public class ServerClientMgr {
 
-	private Channel channel;
+	private static ServerClient gameServerClient;
 	
-	final Request request;
-	
-	public IoMessageReceipt(Channel channel, Request request) {
-		this.channel = channel;
-		this.request = request;
-	}
-
-	public Channel getChannel() {
-		return channel;
-	}
-
-	public Request getRequest() {
-		return request;
+	static {
+		gameServerClient = new ServerClient(101, "QQ游戏服务器-9101", "127.0.0.1", 9101, 2, new GameServerChannelInitializer());
 	}
 	
-	public void write(Response response) {
-		getChannel().write(response);
+	public static ServerClient getGameServerClient() {
+		return gameServerClient;
 	}
-	
 }

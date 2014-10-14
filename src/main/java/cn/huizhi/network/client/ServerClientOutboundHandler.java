@@ -1,4 +1,4 @@
-package cn.lfyun.network.client;
+package cn.huizhi.network.client;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;

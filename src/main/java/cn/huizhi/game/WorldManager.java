@@ -30,30 +30,19 @@
 //                  	不见满街漂亮妹，哪个归得程序员？                                                                            //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
-package cn.lfyun.network.handler;
+package cn.huizhi.game;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.util.concurrent.ConcurrentHashMap;
 
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import cn.lfyun.game.Player;
-import cn.lfyun.game.WorldManager;
-import cn.lfyun.network.client.ServerClientMgr;
-import cn.lfyun.network.message.LoginByPidReq_Protocol.LoginByPidReq;
-import cn.lfyun.network.message.PBMessageProto.PBMessage;
-import cn.lfyun.network.message.Request;
-import cn.lfyun.network.message.Response;
-import cn.lfyun.utilities.ErrorCode;
+import cn.huizhi.network.message.Response;
 
 /**
  * @copyright SHENZHEN RONG WANG HUI ZHI TECHNOLOGY CORP
  * @author Lyon.liao
- * 创建时间：2014年10月8日
- * 类说明：业务处理类
+ * 创建时间：2014年10月10日
+ * 类说明：
  * 
- * 最后修改时间：2014年10月8日
+ * 最后修改时间：2014年10月10日
  * 修改内容： 新建此类
  *************************************************************
  *                                    .. .vr       
@@ -85,59 +74,28 @@ import cn.lfyun.utilities.ErrorCode;
  *
  ***************************************************************
  */
-public class MessageHandler extends SimpleChannelInboundHandler<Request>{
+public class WorldManager {
 
+	final static ConcurrentHashMap<Integer, Player> ONLINE_PLAYER = new ConcurrentHashMap<Integer, Player>();
+	
 	/**
-	 * 玩家
+	 * 添加玩家到世界管理器
+	 * @param player
 	 */
-	protected volatile Player player;
-	
-	/* (non-Javadoc)
-	 * @see io.netty.channel.SimpleChannelInboundHandler#channelRead0(io.netty.channel.ChannelHandlerContext, java.lang.Object)
-	 */
-	@Override
-	protected void channelRead0(ChannelHandlerContext ctx, Request msg)
-			throws Exception {
-		final int cmd = msg.getCmd();
-		switch (cmd) {
-		case 0x0113:
-			processLogin(ctx, msg);
-			break;
-
-		default:
-			if(player == null) {
-				Response response = Response.fail(ErrorCode.NOT_LOGIN);
-				ctx.channel().write(response).addListener(ChannelFutureListener.CLOSE);
-			} else {
-				processMessage(ctx, msg);
-			}
-			break;
+	public static void add(Player player) {
+		if(player != null) {
+			ONLINE_PLAYER.put(player.id, player);
 		}
 	}
 	
-	private void processLogin(ChannelHandlerContext ctx, Request msg) {
-		try {
-			LoginByPidReq loginByPidReq = LoginByPidReq.parseFrom(msg.getBytes());
-			player = new Player();
-			player.id = loginByPidReq.getPid();
-			player.channel = ctx.channel();
-			WorldManager.add(player);
-		} catch (InvalidProtocolBufferException e) {
-			e.printStackTrace();
-		}
+	public static Player getPlayer(int id) {
+		return ONLINE_PLAYER.get(id);
 	}
 	
-	private void processMessage(ChannelHandlerContext ctx, Request msg) {
-		switch(msg.getCmd()) {
-		case 0x0016:
-			ctx.write(Response.PONG);
-			break;
-		default:
-			PBMessage.Builder builder = PBMessage.newBuilder();
-			builder.setCmd(msg.getCmd()).setSessionId(player.id).setData(ByteString.copyFrom(msg.getBytes()));
-			ServerClientMgr.getGameServerClient().send(builder.build());
-			break;
+	public static void writeToClient(int id, Response response) {
+		Player player = getPlayer(id);
+		if(player != null && player.channel != null) {
+			player.channel.writeAndFlush(response);
 		}
 	}
-
 }

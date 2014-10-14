@@ -30,17 +30,21 @@
 //                  	不见满街漂亮妹，哪个归得程序员？                                                                            //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
-package cn.lfyun.game;
+package cn.huizhi.network.codec;
 
-import io.netty.channel.Channel;
+import cn.huizhi.network.message.Response;
+import cn.huizhi.utilities.ErrorCode;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
  * @copyright SHENZHEN RONG WANG HUI ZHI TECHNOLOGY CORP
  * @author Lyon.liao
- * 创建时间：2014年10月10日
- * 类说明：
+ * 创建时间：2014年10月9日
+ * 类说明：消息编码器
  * 
- * 最后修改时间：2014年10月10日
+ * 最后修改时间：2014年10月9日
  * 修改内容： 新建此类
  *************************************************************
  *                                    .. .vr       
@@ -72,9 +76,34 @@ import io.netty.channel.Channel;
  *
  ***************************************************************
  */
-public class Player {
+public class MessageEncoder extends MessageToByteEncoder<Response> {
 
-	public volatile int id;
-	
-	public volatile Channel channel;
+	/* (non-Javadoc)
+	 * @see io.netty.handler.codec.MessageToByteEncoder#encode(io.netty.channel.ChannelHandlerContext, java.lang.Object, io.netty.buffer.ByteBuf)
+	 */
+	@Override
+	protected void encode(ChannelHandlerContext ctx, Response msg, ByteBuf out)
+			throws Exception {
+		
+		byte[] datas = msg.getDatas();
+		int size = 2;
+		int cmd = msg.getCmd();
+		//返回错误代码
+		ErrorCode errorCode = msg.getErrorCode();
+		if(errorCode != null) {
+			size += 2;
+		}
+		if(msg != null) {
+			size += datas.length;
+		}
+		out.writeShort(size);
+		out.writeShort(cmd);
+		if(errorCode != null) {
+			out.writeShort(errorCode.getCode());
+		}
+		if(datas != null) {
+			out.writeBytes(datas);
+		}
+	}
+
 }

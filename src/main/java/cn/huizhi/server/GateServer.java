@@ -30,21 +30,33 @@
 //                  	不见满街漂亮妹，哪个归得程序员？                                                                            //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
-package cn.lfyun.network.codec;
+package cn.huizhi.server;
 
-import cn.lfyun.network.message.Request;
-import cn.lfyun.utilities.CheckSumStream;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.DefaultThreadFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import cn.huizhi.network.codec.MessageDecoder;
+import cn.huizhi.network.codec.MessageEncoder;
+import cn.huizhi.network.handler.MessageHandler;
+import cn.huizhi.network.handler.SimpleChannelOutboundHandler;
 
 /**
  * @copyright SHENZHEN RONG WANG HUI ZHI TECHNOLOGY CORP
  * @author Lyon.liao
- * 创建时间：2014年10月8日
- * 类说明：消息校验解码
+ * 创建时间：2014年10月9日
+ * 类说明：
  * 
- * 最后修改时间：2014年10月8日
+ * 最后修改时间：2014年10月9日
  * 修改内容： 新建此类
  *************************************************************
  *                                    .. .vr       
@@ -76,106 +88,68 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
  *
  ***************************************************************
  */
-public class MessageDecoder extends LengthFieldBasedFrameDecoder {
+public class GateServer {
 
-	/**
-	 * 校验包
-	 */
-	private final CheckSumStream checkSumStream;
-	private int msgOffset;
-	
-	private static final int OFFSET_MAX_LIMIT_TO_MOD = 7;
-	
-	/**
-	 * @param byteOrder
-	 * @param maxFrameLength
-	 * @param lengthFieldOffset
-	 * @param lengthFieldLength
-	 * @param lengthAdjustment
-	 * @param initialBytesToStrip
-	 * @param failFast
-	 */
-	public MessageDecoder() {
-		super(4096, 0, 2, 0, 0);
-		checkSumStream = new CheckSumStream();
-	}
+	static ServerBootstrap serverBootstrap;
 
-	@Override
-	protected ByteBuf extractFrame(ChannelHandlerContext ctx, ByteBuf buffer,
-			int index, int length) {
-		
-		if(buffer.readableBytes() < 2){
-            System.err.println("不够读取一个长度");
-            ctx.close();
-            return null;
-	    }
-		int size = buffer.readShort();
-		
-		if(buffer.readableBytes() < 1){
-            System.err.println("不够读取一个校验和");
-            ctx.close();
-            return null;
-	    }
-		int checkSumByte = buffer.readUnsignedByte();
+	private static Logger logger = LoggerFactory.getLogger(GateServer.class);
+	
+	public static void start(int port) {
+		// Configure the server.
+		EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+		EventLoopGroup workerGroup = new NioEventLoopGroup(2, new DefaultThreadFactory("GateServer"));
 		
 		try {
-			checkSumStream.clearSum();
-			buffer.getBytes(buffer.readerIndex(), checkSumStream,
-			        buffer.readableBytes());
-			if (checkSumByte != checkSumStream.getCheckSum()){
-	            System.err.println("校验和错误, expected: " + checkSumStream.getCheckSum() + ", actual: " + checkSumByte);
-	            ctx.close();
-	            return null;
-	        }
-		} catch (Throwable e) {
-			System.err.println(e.getMessage());
+			serverBootstrap = new ServerBootstrap();
+			
+			serverBootstrap.group(bossGroup, workerGroup)
+				.channel(NioServerSocketChannel.class)
+				.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+				.option(ChannelOption.SO_BACKLOG, 1024)
+				.option(ChannelOption.TCP_NODELAY, true)
+				.option(ChannelOption.SO_KEEPALIVE, true)
+				.option(ChannelOption.SO_RCVBUF, 2048)
+				.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+				.childHandler(new ChannelInitializer<SocketChannel>() {
+					@Override
+					protected void initChannel(SocketChannel ch) throws Exception {
+						ch.pipeline()
+							.addLast("decoder", new MessageDecoder())
+							.addLast(new MessageHandler())
+							.addLast("encoder", new MessageEncoder())
+							.addLast(new SimpleChannelOutboundHandler())
+							;
+					}
+				});
+			serverBootstrap.bind(port).channel();
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
 		}
-		
-		int offset = msgOffset++ & OFFSET_MAX_LIMIT_TO_MOD;
-		
-		if(buffer.readableBytes() < 1){
-            System.err.println("不够读出一个偏移量");
-            ctx.close();
-            return null;
-        }
-        int bigOffset = buffer.readUnsignedByte();
 
-        if (bigOffset != calculateVerificationBytes(msgOffset)){
-            System.err.println("偏移量校验错误");
-            ctx.close();
-            return null;
-        }
-
-        if(buffer.readableBytes() < 2){
-            System.err.println("不够读出一个cmd");
-            ctx.close();
-            return null;
-        }
-        int msgId = buffer.readUnsignedShort();
-
-        int o = msgId >>> 13;
-
-        msgId = msgId & 0x1fff;
-
-        if (o != offset){
-            System.err.println("wrong offset, msg " + msgId);
-            ctx.close();
-            return null;
-        }
-        
-        byte[] bytes = new byte[size - 4];
-        buffer.readBytes(bytes);
-        Request request = Request.createRequest(size, msgId, bytes);
-        ctx.fireChannelRead(request);
-		return null;
+		logger.info("服务器启动成功，开始监听{} 端口...", port);
 	}
 	
-	private static int calculateVerificationBytes(int offset){
-        int v = offset;
-        v ^= v >> 8;
-        v ^= v >> 4;
-        v &= 0xff;
-        return v;
-    }
+	public static void shutdown() {
+		
+	}
+	private static class ShutdownHook implements Runnable {
 
+		@Override
+		public void run() {
+			try {
+				// do shutdown procedure here.
+				logger.info("正在优雅的停止服务器.....");
+				GateServer.shutdown();
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
+			} finally {
+				// any I/O procedure for destory?
+			}
+		}
+	}
+	
+	public static void main(String[] args) {
+		start(9000);
+		Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook(),"shutdownHook"));
+	}
 }

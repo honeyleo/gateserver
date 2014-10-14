@@ -30,20 +30,17 @@
 //                  	不见满街漂亮妹，哪个归得程序员？                                                                            //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
-package cn.lfyun.network.message;
+package cn.huizhi.game;
 
-import java.util.Arrays;
-
-import cn.lfyun.utilities.ErrorCode;
-
+import io.netty.channel.Channel;
 
 /**
  * @copyright SHENZHEN RONG WANG HUI ZHI TECHNOLOGY CORP
  * @author Lyon.liao
- * 创建时间：2014年10月9日
+ * 创建时间：2014年10月10日
  * 类说明：
  * 
- * 最后修改时间：2014年10月9日
+ * 最后修改时间：2014年10月10日
  * 修改内容： 新建此类
  *************************************************************
  *                                    .. .vr       
@@ -75,72 +72,9 @@ import cn.lfyun.utilities.ErrorCode;
  *
  ***************************************************************
  */
-public class Response {
+public class Player {
 
-	private int cmd;
+	public volatile int id;
 	
-	private ErrorCode errorCode;
-	
-	private byte[] datas;
-
-	/**
-	 * 心跳包
-	 */
-	public final static Response PONG = new Response(0x10, null, null);
-	/**
-	 * 成功响应：不带包体的响应消息
-	 * @param cmd
-	 * @return
-	 */
-	public static Response success(int cmd) {
-		Response response = new Response(cmd, ErrorCode.SUCCESS, null);
-		return response;
-	}
-	
-	/**
-	 * 成功响应：带包体的消息
-	 * @param cmd
-	 * @param datas
-	 * @return
-	 */
-	public static Response success(int cmd, byte[] datas) {
-		Response response = new Response(cmd, ErrorCode.SUCCESS, datas);
-		return response;
-	}
-	
-	/**
-	 * 全局异常：错误代码
-	 * @param errorCode
-	 * @return
-	 */
-	public static Response fail(ErrorCode errorCode) {
-		Response response = new Response(0, errorCode, null);
-		return response;
-	}
-	
-	private Response(int cmd, ErrorCode errorCode, byte[] datas) {
-		this.cmd = cmd;
-		this.errorCode = errorCode;
-		this.datas = datas;
-	}
-	
-	public int getCmd() {
-		return cmd;
-	}
-
-	public ErrorCode getErrorCode() {
-		return errorCode;
-	}
-
-	public byte[] getDatas() {
-		return datas;
-	}
-
-	@Override
-	public String toString() {
-		return "Response [cmd=" + cmd + ", errorCode=" + errorCode + ", datas="
-				+ Arrays.toString(datas) + "]";
-	}
-	
-	
+	public volatile Channel channel;
 }

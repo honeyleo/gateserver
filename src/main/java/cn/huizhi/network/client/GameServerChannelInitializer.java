@@ -30,7 +30,15 @@
 //                  	不见满街漂亮妹，哪个归得程序员？                                                                            //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
-package cn.lfyun.network.client;
+package cn.huizhi.network.client;
+
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.protobuf.ProtobufDecoder;
+import io.netty.handler.codec.protobuf.ProtobufEncoder;
+import cn.huizhi.message.PBMessagePro.PBMessage;
 
 /**
  * @copyright SHENZHEN RONG WANG HUI ZHI TECHNOLOGY CORP
@@ -70,15 +78,21 @@ package cn.lfyun.network.client;
  *
  ***************************************************************
  */
-public class ServerClientMgr {
+public class GameServerChannelInitializer extends ChannelInitializer<SocketChannel> {
 
-	private static ServerClient gameServerClient;
-	
-	static {
-		gameServerClient = new ServerClient(101, "QQ游戏服务器-9101", "127.0.0.1", 9101, 2, new GameServerChannelInitializer());
+	/* (non-Javadoc)
+	 * @see io.netty.channel.ChannelInitializer#initChannel(io.netty.channel.Channel)
+	 */
+	@Override
+	protected void initChannel(SocketChannel ch) throws Exception {
+		ch.pipeline()
+				.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(10240, 0, 2, 0, 2))
+				.addLast("protobufDecoder", new ProtobufDecoder(PBMessage.getDefaultInstance()))
+				.addLast(new GameServerHandler())
+				.addLast("frameEncoder", new LengthFieldPrepender(2))
+				.addLast("protobufEncoder", new ProtobufEncoder())
+				.addLast(new ServerClientOutboundHandler())
+		;
 	}
-	
-	public static ServerClient getGameServerClient() {
-		return gameServerClient;
-	}
+
 }
