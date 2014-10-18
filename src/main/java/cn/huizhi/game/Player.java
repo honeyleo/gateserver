@@ -33,6 +33,7 @@
 package cn.huizhi.game;
 
 import io.netty.channel.Channel;
+import cn.huizhi.network.message.Response;
 
 /**
  * @copyright SHENZHEN RONG WANG HUI ZHI TECHNOLOGY CORP
@@ -77,4 +78,8 @@ public class Player {
 	public volatile int id;
 	
 	public volatile Channel channel;
+	
+	public void write(Response response) {
+		channel.writeAndFlush(response);
+	}
 }

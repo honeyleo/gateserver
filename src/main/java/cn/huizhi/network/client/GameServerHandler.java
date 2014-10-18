@@ -84,7 +84,7 @@ public class GameServerHandler extends SimpleChannelInboundHandler<PBMessage> {
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, PBMessage msg)
 			throws Exception {
-		WorldManager.writeToClient(msg.getSessionId(), Response.success(msg.getCmd(), msg.getData().toByteArray()));
+		WorldManager.sendMsgToPlayer(msg.getSessionId(), Response.success(msg.getCmd(), msg.getData().toByteArray()));
 	}
 
 }

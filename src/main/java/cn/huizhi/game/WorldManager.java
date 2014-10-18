@@ -92,10 +92,10 @@ public class WorldManager {
 		return ONLINE_PLAYER.get(id);
 	}
 	
-	public static void writeToClient(int id, Response response) {
+	public static void sendMsgToPlayer(int id, Response response) {
 		Player player = getPlayer(id);
-		if(player != null && player.channel != null) {
-			player.channel.writeAndFlush(response);
+		if(player != null) {
+			player.write(response);
 		}
 	}
 }
