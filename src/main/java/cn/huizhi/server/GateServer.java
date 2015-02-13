@@ -55,38 +55,29 @@ import cn.huizhi.network.handler.SimpleChannelOutboundHandler;
  * @author Lyon.liao
  * 创建时间：2014年10月9日
  * 类说明：
- * 
+ * 	PBMessage：
+	id：玩家ID
+	sid：会话ID
+	cmd：事件处理ID
+	status：错误代码
+	playerList：玩家ID列表
+	data：protobuf实体字节
+	
+	
+	客户端 ==》网关：
+	1. 客户端请求：size|cmd|data
+	2. 网关接到客户端请求，寻找cmd对应的handler处理
+	3. 如果没有对应的handler，则封装PBMessage发送到游戏服务器
+	
+	网关 ==》游戏服
+	1. 网关发送PBMessage数据给游戏服务器
+	2. 游戏服务器接到网关服务器发过来的PBMessage，拿出cmd，寻找cmd对应的handler进行处理
+	
+	游戏服 ==》网关
+	1. 游戏服handler处理完后，封装PBMessage返回给网关服务器
+	2. 网关服务器解析出cmd，寻找是否有对应handler进行处理，没有则转换成size|cmd|errorCode|data数据写回玩家列表上玩家：List<Integer>
  * 最后修改时间：2014年10月9日
  * 修改内容： 新建此类
- *************************************************************
- *                                    .. .vr       
- *                                qBMBBBMBMY     
- *                              8BBBBBOBMBMv    
- *                            iMBMM5vOY:BMBBv        
- *            .r,             OBM;   .: rBBBBBY     
- *            vUL             7BB   .;7. LBMMBBM.   
- *           .@Wwz.           :uvir .i:.iLMOMOBM..  
- *            vv::r;             iY. ...rv,@arqiao. 
- *             Li. i:             v:.::::7vOBBMBL.. 
- *             ,i7: vSUi,         :M7.:.,:u08OP. .  
- *               .N2k5u1ju7,..     BMGiiL7   ,i,i.  
- *                :rLjFYjvjLY7r::.  ;v  vr... rE8q;.:,, 
- *               751jSLXPFu5uU@guohezou.,1vjY2E8@Yizero.    
- *               BB:FMu rkM8Eq0PFjF15FZ0Xu15F25uuLuu25Gi.   
- *             ivSvvXL    :v58ZOGZXF2UUkFSFkU1u125uUJUUZ,   
- *           :@kevensun.      ,iY20GOXSUXkSuS2F5XXkUX5SEv.  
- *       .:i0BMBMBBOOBMUi;,        ,;8PkFP5NkPXkFqPEqqkZu.  
- *     .rqMqBBMOMMBMBBBM .           @Mars.KDIDS11kFSU5q5   
- *   .7BBOi1L1MM8BBBOMBB..,          8kqS52XkkU1Uqkk1kUEJ   
- *   .;MBZ;iiMBMBMMOBBBu ,           1OkS1F1X5kPP112F51kU   
- *     .rPY  OMBMBBBMBB2 ,.          rME5SSSFk1XPqFNkSUPZ,.
- *            ;;JuBML::r:.:.,,        SZPX0SXSP5kXGNP15UBr.
- *                L,    :@huhao.      :MNZqNXqSqXk2E0PSXPE .
- *            viLBX.,,v8Bj. i:r7:,     2Zkqq0XXSNN0NOXXSXOU 
- *          :r2. rMBGBMGi .7Y, 1i::i   vO0PMNNSXXEqP@Secbone.
- *          .i1r. .jkY,    vE. iY....  20Fq0q5X5F1S2F22uuv1M;
- *
- ***************************************************************
  */
 public class GateServer {
 
